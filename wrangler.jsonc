@@ -5,15 +5,34 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "apihono-nest",
-	"main": "src/index.ts",
+	"main": "src/main.ts",
 	"compatibility_date": "2025-09-09",
-	"assets": {
-		"binding": "ASSETS",
-		"directory": "./public"
-	},
+	"workers_dev": true,
+	// "assets": {
+	// 	"binding": "ASSETS",
+	// 	"directory": "./public"
+	// },
 	"observability": {
 		"enabled": true
-	}
+	},
+	"routes": [
+		{
+			"pattern": "apihono.db9.uk",
+			"custom_domain": true
+		}
+	],
+	"vars": {
+		"MY_VARIABLE": "production_value",
+		"ENVIRONMENT": true,
+		"CORS_ORIGIN": "192.168.1.203"
+	},
+	"d1_databases": [
+		{
+			"binding": "DB1",
+			"database_name": "HONESTDB",
+			"database_id": "c86299d2-d57c-4462-83b7-0c18fbebafac"
+		}
+	],
 	/**
 	 * Smart Placement
 	 * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
@@ -29,7 +48,6 @@
 	 * Environment Variables
 	 * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
 	 */
-	// "vars": { "MY_VARIABLE": "production_value" }
 	/**
 	 * Note: Use secrets to store sensitive data.
 	 * https://developers.cloudflare.com/workers/configuration/secrets/
