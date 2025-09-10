@@ -1,20 +1,25 @@
-import bcrypt from 'bcryptjs';
-import { HonoContext } from '@/types';
-import { IUserService } from './interfaces/user.interface';
-import { User } from './entities/user.entity';
+import * as bcrypt from 'bcryptjs';
+import { User, UserWithoutPassword } from './entities/user.entity';
 
 import { CreateUserDto, UpdateUserDto } from './dto';
 import { d1Connection, user } from '@/db';
 import { eq } from 'drizzle-orm';
 
-// Tipo para usuario sin password
-export type UserWithoutPassword = Omit<User, 'password'>;
-
-export class UserService implements IUserService {
+//implements IUserService
+export class UserService {
   private db;
 
-  constructor(private readonly context: HonoContext) {
+  constructor() {
     this.db = d1Connection.getDB();
+  }
+
+  // private async hashPassword(password: string): Promise<string> {
+  //   const saltRounds = 10;
+  //   return await bcrypt.hashSync(password, saltRounds);
+  // }
+
+  private normalizeEmail(email: string): string {
+    return email.toLowerCase().trim();
   }
 
   async findAll(): Promise<UserWithoutPassword[]> {
@@ -48,7 +53,7 @@ export class UserService implements IUserService {
     return result || null;
   }
 
-  async findByEmail(email: string): Promise<UserWithoutPassword | null> {
+  async findByEmail(email: string): Promise<User | null> {
     const result = await this.db.query.user.findFirst({
       where: (user, { eq }) => eq(user.email, email.trim().toLowerCase()),
     });
@@ -58,7 +63,7 @@ export class UserService implements IUserService {
   async create(cUserDto: CreateUserDto): Promise<UserWithoutPassword | null> {
     const newUser = {
       ...cUserDto,
-      email: cUserDto.email.toLowerCase(),
+      email: this.normalizeEmail(cUserDto.email),
       password: bcrypt.hashSync(cUserDto.password.trim()),
       roll: 'user',
       active: true,
@@ -77,10 +82,15 @@ export class UserService implements IUserService {
   }
 
   async update(id: string, updateUserDto: Partial<UpdateUserDto>): Promise<UserWithoutPassword | null> {
+    let updatedData = { ...updateUserDto };
+    if (updateUserDto.email) {
+      updatedData.email = this.normalizeEmail(updateUserDto.email);
+    }
+
     const result = await this.db
       .update(user)
       .set({
-        ...updateUserDto,
+        ...updatedData,
         updatedAt: new Date(),
       })
       .where(eq(user.id, id))

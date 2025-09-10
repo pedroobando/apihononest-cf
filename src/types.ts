@@ -6,6 +6,7 @@ interface Env {
   ENVIRONMENT: string;
   JWT_SECRET: string;
   JWT_EXPIRES: number;
+  ALLOWED_ORIGINS: string[];
 }
 
 export type HonoContext = {
@@ -13,6 +14,7 @@ export type HonoContext = {
   Variables: {
     user?: any; // Para almacenar información del usuario autenticado
     db: DrizzleD1Database<typeof schema>;
+    validatedBody: any;
   };
 };
 

@@ -1,13 +1,32 @@
-import { Context } from 'hono';
+import { Context, Hono } from 'hono';
 import { UserService } from './user.service';
-import { CreateUserDto, UpdateUserDto } from './dto';
+import { CreateUserDto, CreateUserSchema, UpdateUserDto, UpdateUserSchema } from './dto';
+import { ValidationPipe } from '@/common/pipes/validation.pipe';
 import { HonoContext } from '@/types';
 
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  private readonly router: Hono<HonoContext>;
+
+  constructor(private readonly userService: UserService) {
+    this.router = new Hono<HonoContext>();
+    this.setupRoutes();
+  }
+
+  private setupRoutes() {
+    this.router.get('/', (c) => this.getAllUsers(c));
+    this.router.get('/:id', (c) => this.getUserById(c));
+    this.router.post('/', ValidationPipe.validate(CreateUserSchema), (c) => this.createUser(c));
+
+    this.router.put('/:id', ValidationPipe.validate(UpdateUserSchema), (c) => this.updateUser(c));
+    this.router.delete('/:id', (c) => this.deleteUser(c));
+  }
 
   async getAllUsers(c: Context<HonoContext>) {
     try {
+      const currentUser = c.get('user');
+      const currentpayload = c.get('jwtPayload');
+      console.log(currentUser, currentpayload);
+
       const users = await this.userService.findAll();
       return c.json(users);
     } catch (error) {
@@ -32,14 +51,26 @@ export class UserController {
     }
   }
 
-  async createUser(c: Context<HonoContext>) {
+  async createUser(c: Context<HonoContext, any, {}>) {
     try {
-      const createUserDto: CreateUserDto = await c.req.json();
+      // Solo usuarios autenticados pueden crear usuarios
+      // Opcional: verificar permisos específicos si es necesario
+      const currentUser = c.get('user');
+      // const currentpayload = c.get('jwtPayload');
+      // console.log(currentUser, currentpayload);
 
-      // Validar que el email no exista
+      const createUserDto: CreateUserDto = c.get('validatedBody');
+
+      // Validar que el email no exista (ya normalizado por Zod y el servicio)
       const existingUser = await this.userService.findByEmail(createUserDto.email);
       if (existingUser) {
-        return c.json({ error: 'Email already exists' }, 409);
+        return c.json(
+          {
+            error: 'Email already exists',
+            details: [{ field: 'email', message: 'Email already exists' }],
+          },
+          409,
+        );
       }
 
       const user = await this.userService.create(createUserDto);
@@ -53,7 +84,8 @@ export class UserController {
   async updateUser(c: Context<HonoContext>) {
     try {
       const id = c.req.param('id');
-      const updateUserDto: UpdateUserDto = await c.req.json();
+      const updateUserDto: UpdateUserDto = c.get('validatedBody');
+      // const updateUserDto: UpdateUserDto = await c.req.json();
 
       // Validar que el usuario existe
       const existingUser = await this.userService.findOne(id);
@@ -65,7 +97,13 @@ export class UserController {
       if (updateUserDto.email && updateUserDto.email !== existingUser.email) {
         const userWithEmail = await this.userService.findByEmail(updateUserDto.email);
         if (userWithEmail) {
-          return c.json({ error: 'Email already in use' }, 409);
+          return c.json(
+            {
+              error: 'Email already in use',
+              details: [{ field: 'email', message: 'Email already in use' }],
+            },
+            409,
+          );
         }
       }
 
@@ -91,5 +129,9 @@ export class UserController {
       console.error('Error deleting user:', error);
       return c.json({ error: 'Internal server error' }, 500);
     }
+  }
+
+  getRoutes() {
+    return this.router;
   }
 }

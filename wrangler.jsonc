@@ -24,7 +24,7 @@
 	"vars": {
 		"MY_VARIABLE": "production_value",
 		"ENVIRONMENT": true,
-		"CORS_ORIGIN": "192.168.1.203"
+		"ALLOWED_ORIGINS": "192.168.1.203"
 	},
 	"d1_databases": [
 		{

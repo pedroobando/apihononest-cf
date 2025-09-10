@@ -1,19 +1,24 @@
 import { Hono } from 'hono';
 import { logger } from 'hono/logger';
-import { corsMiddleware, authMiddleware } from '@/middleware';
-import { UserModule, PostModule } from '@/modules';
+import { corsMiddleware, authMiddleware, normalizeEmailMiddleware } from '@/common/middleware';
+import { UserModule, PostModule, AuthModule } from '@/modules';
+
 import { HonoContext } from './types';
+import { authMiddleware2 } from './common/middleware/auth-middleware';
 
 export class AppModule {
   private readonly app: Hono<HonoContext>;
   private readonly userModule: UserModule;
   private readonly postModule: PostModule;
+  private readonly authModule: AuthModule;
 
   constructor() {
     this.app = new Hono<HonoContext>();
     this.userModule = new UserModule();
     this.postModule = new PostModule();
-    this.setupMiddleware();
+    this.authModule = new AuthModule();
+
+    this.setupMiddlewares();
     this.setupRoutes();
   }
 
@@ -22,28 +27,35 @@ export class AppModule {
     this.app.get('/', (c) => c.json({ status: 'OK', environment: c.env.ENVIRONMENT }));
 
     // API routes
+    // Rutas de autenticación (públicas)
+    this.app.route('/auth', this.authModule.getRoutes());
     this.app.route('/users', this.userModule.getRoutes());
     this.app.route('/posts', this.postModule.getRoutes());
   }
 
-  private setupMiddleware() {
+  private setupMiddlewares() {
     this.app.use('*', logger());
-    this.app.use('*', corsMiddleware);
-    this.app.use('/posts', authMiddleware);
+
+    // Configurar CORS usando una función para obtener los orígenes del entorno
+    this.app.use(
+      '*',
+      corsMiddleware({
+        origins: (c) => {
+          // Obtener ALLOWED_ORIGINS del contexto (env)
+          const allowedOrigins = c.env.ALLOWED_ORIGINS || '';
+          return allowedOrigins.split(',').filter(Boolean);
+        },
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization'],
+        credentials: true,
+        maxAge: 600,
+      }),
+    );
+
+    // this.app.use('/posts', authMiddleware);
+    this.app.use('*', normalizeEmailMiddleware);
+    this.app.use('/users', authMiddleware());
   }
-
-  // private cnnD1() {
-  //   this.app.use(async (c) => {
-  //     if (!d1Connection.isInitialized()) {
-  //       d1Connection.initialize(c.env.DB1);
-  //       // c.set('db', db);
-  //     }
-
-  //     // const db = drizzle(c.env.DB, { schema });
-
-  //     // await next();
-  //   });
-  // }
 
   getApp() {
     return this.app;

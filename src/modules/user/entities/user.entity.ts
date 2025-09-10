@@ -5,6 +5,8 @@ export interface User {
   password: string;
   roll: string;
   active: boolean;
-  // createdAt: Date;
-  // updatedAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
+
+export type UserWithoutPassword = Omit<User, 'password'>;
