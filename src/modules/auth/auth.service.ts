@@ -1,11 +1,7 @@
+import * as bcrypt from 'bcryptjs';
 import { UserService } from '../user/user.service';
 import { JwtUtil } from '../../common/utils/jwt';
-import * as bcrypt from 'bcryptjs';
-
-export interface LoginCredentials {
-  email: string;
-  password: string;
-}
+import { LoginDto } from './dto/login.dto';
 
 export class AuthService {
   private userService: UserService;
@@ -14,7 +10,7 @@ export class AuthService {
     this.userService = new UserService();
   }
 
-  async login(credentials: LoginCredentials, jwtSecret: string) {
+  async login(credentials: LoginDto, jwtSecret: string) {
     const { email, password } = credentials;
 
     // Buscar usuario por email (este método incluye la contraseña para verificación)

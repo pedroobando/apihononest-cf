@@ -1,6 +1,8 @@
 import { Hono, Context } from 'hono';
-import { AuthService, LoginCredentials } from './auth.service';
+import { AuthService } from './auth.service';
 import { HonoContext } from '@/types';
+import { ValidationPipe } from '@/common/pipes/validation.pipe';
+import { LoginDto, LoginSchema } from './dto/login.dto';
 
 export class AuthController {
   private readonly router: Hono<HonoContext>;
@@ -13,13 +15,13 @@ export class AuthController {
   }
 
   private setupRoutes() {
-    this.router.post('/login', (c) => this.login(c));
+    this.router.post('/login', ValidationPipe.validate(LoginSchema), (c) => this.login(c));
     this.router.post('/validate', (c) => this.validateToken(c));
   }
 
   async login(c: Context) {
     try {
-      const credentials: LoginCredentials = await c.req.json();
+      const credentials: LoginDto = c.get('validatedBody');
 
       if (!credentials.email || !credentials.password) {
         return c.json({ error: 'Email and password are required' }, 400);

@@ -4,7 +4,6 @@ import { corsMiddleware, authMiddleware, normalizeEmailMiddleware } from '@/comm
 import { UserModule, PostModule, AuthModule } from '@/modules';
 
 import { HonoContext } from './types';
-import { authMiddleware2 } from './common/middleware/auth-middleware';
 
 export class AppModule {
   private readonly app: Hono<HonoContext>;
