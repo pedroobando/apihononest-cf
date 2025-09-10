@@ -24,7 +24,8 @@
 	"vars": {
 		"MY_VARIABLE": "production_value",
 		"ENVIRONMENT": true,
-		"ALLOWED_ORIGINS": "192.168.1.203"
+		"JWT_EXPIRES":30,
+		"ALLOWED_ORIGINS": ["192.168.1.203"]
 	},
 	"d1_databases": [
 		{
